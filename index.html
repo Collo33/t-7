@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Shopping Cart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('https://shoesonsale.dk/media//wysiwyg/shoesonsalefront/shoesonsale_stock.jpg');
+            background-size: cover;
+            color: pink;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .product {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .cart {
+            margin-top: 20px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .total {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .payment-method {
+            margin-top: 20px;
+            display: none;
+        }
+        .hidden {
+            display: none;
+        }
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        .login-form {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .product img {
+            width: 100px;
+            height: auto;
+            margin-top: 10px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Online Shopping Cart</h1>
+
+<div id="products">
+    <div class="product">
+        <h2>Product 1</h2>
+        <p>Price: 1,000 Ksh</p>
+        <img src="https://www.example.com/path/to/image1.jpg" alt="Product 1 Image">
+        <button onclick="showLoginModal('Product 1', 1000)">Add to Cart</button>
+    </div>
+    <div class="product">
+        <h2>Product 2</h2>
+        <p>Price: 2,500 Ksh</p>
+        <img src="https://www.example.com/path/to/image2.jpg" alt="Product 2 Image">
+        <button onclick="showLoginModal('Product 2', 2500)">Add to Cart</button>
+    </div>
+    <div class="product">
+        <h2>Product 3</h2>
+        <p>Price: 750 Ksh</p>
+        <img src="https://backyardshoez.co.ke/wp-content/uploads/2024/09/DSC_6299-450x450.jpg" alt="Product 3 Image">
+        <button onclick="showLoginModal('Product 3', 750)">Add to Cart</button>
+    </div>
+    <!-- Additional products would go here -->
+</div>
+
+<div class="cart">
+    <h2>Shopping Cart</h2>
+    <div id="cartItems"></div>
+    <div class="total" id="totalPrice">Total: 0 Ksh</div>
+    <button id="proceedBtn" onclick="showPaymentMethods()">Proceed to Payment</button>
+</div>
+
+<div class="payment-method" id="paymentMethods">
+    <h2>Select Payment Method</h2>
+    <select id="paymentOption" onchange="showPaymentDetails()">
+        <option value="">Choose a payment method</option>
+        <option value="credit">Credit/Debit Card</option>
+        <option value="mobile">Mobile Money</option>
+        <option value="bank">Bank Transfer</option>
+    </select>
+
+    <div id="paymentDetails" class="hidden">
+        <div id="creditDetails" class="payment-detail">
+            <h3>Credit/Debit Card Details</h3>
+            <input type="text" placeholder="Card Number" /><br>
+            <input type="text" placeholder="Card Holder Name" /><br>
+            <input type="text" placeholder="Expiry Date (MM/YY)" /><br>
+            <input type="text" placeholder="CVV" /><br>
+        </div>
+        <div id="mobileDetails" class="payment-detail hidden">
+            <h3>Mobile Money Details</h3>
+            <input type="text" id="mobileNumber" placeholder="Mobile Number" /><br>
+            <input type="text" placeholder="Amount" value="" disabled /><br>
+        </div>
+        <div id="bankDetails" class="payment-detail hidden">
+            <h3>Bank Transfer Details</h3>
+            <input type="text" id="accountNumber" placeholder="Account Number" /><br>
+            <input type="text" placeholder="Bank Name" /><br>
+        </div>
+    </div>
+    <button onclick="confirmPayment()">Confirm Payment</button>
+</div>
+
+<!-- Login Modal -->
+<div class="login-modal" id="loginModal">
+    <div class="login-form">
+        <h2>Sign In</h2>
+        <input type="text" id="username" placeholder="Email" required /><br>
+        <input type="password" id="password" placeholder="Password" required /><br>
+        <input type="text" id="phoneNumber" placeholder="Phone Number" required /><br>
+        <button onclick="signIn()">Sign In</button>
+        <button onclick="closeLoginModal()">Cancel</button>
+        <p class="error" id="loginMessage"></p>
+    </div>
+</div>
+
+<script>
+    let cart = [];
+    let total = 0;
+    let loggedIn = false;
+
+    function showLoginModal(productName, productPrice) {
+        if (!loggedIn) {
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('loginMessage').innerText = '';
+            window.currentProduct = { name: productName, price: productPrice };
+        } else {
+            addToCart(productName, productPrice);
+        }
+    }
+
+    function closeLoginModal() {
+        document.getElementById('loginModal').style.display = 'none';
+    }
+
+    function signIn() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email regex
+        const phonePattern = /^\d{10}$/; // Phone number must be 10 digits
+
+        // Validation checks
+        if (!emailPattern.test(username)) {
+            document.getElementById('loginMessage').innerText = 'Please enter a valid email.';
+            return;
+        }
+        if (password.length < 6) {
+            document.getElementById('loginMessage').innerText = 'Password must be at least 6 characters long.';
+            return;
+        }
+        if (!phonePattern.test(phoneNumber)) {
+            document.getElementById('loginMessage').innerText = 'Phone number must be 10 digits.';
+            return;
+        }
+
+        // Simulated login logic
+        loggedIn = true;
+        alert('Login successful!');
+        closeLoginModal();
+
+        // Add the product to the cart after login
+        if (window.currentProduct) {
+            addToCart(window.currentProduct.name, window.currentProduct.price);
+        }
+    }
+
+    function addToCart(productName, productPrice) {
+        cart.push({ name: productName, price: productPrice });
+        total += productPrice;
+        updateCart();
+    }
+
+    function updateCart() {
+        const cartItems = document.getElementById('cartItems');
+        cartItems.innerHTML = '';
+        cart.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'cart-item';
+            div.innerHTML = `${item.name} - ${item.price} Ksh`;
+            cartItems.appendChild(div);
+        });
+        document.getElementById('totalPrice').innerText = `Total: ${total} Ksh`;
+    }
+
+    function showPaymentMethods() {
+        document.getElementById('paymentMethods').style.display = 'block';
+    }
+
+    function showPaymentDetails() {
+        const paymentOption = document.getElementById('paymentOption').value;
+        document.getElementById('paymentDetails').classList.remove('hidden');
+
+        document.querySelectorAll('.payment-detail').forEach(detail => {
+            detail.classList.add('hidden');
+        });
+
+        if (paymentOption === 'credit') {
+            document.getElementById('creditDetails').classList.remove('hidden');
+        } else if (paymentOption === 'mobile') {
+            document.getElementById('mobileDetails').classList.remove('hidden');
+            document.querySelector('#mobileDetails input[placeholder="Amount"]').value = total + ' Ksh';
+        } else if (paymentOption === 'bank') {
+            document.getElementById('bankDetails').classList.remove('hidden');
+        }
+    }
+
+    function confirmPayment() {
+        const paymentOption = document.getElementById('paymentOption').value;
+        let message = `Total amount to be paid: ${total} Ksh\nPayment Method: ${paymentOption}\n`;
+
+        if (paymentOption === 'credit') {
+            message += 'Payment via Credit/Debit Card confirmed.';
+        } else if (paymentOption === 'mobile') {
+            const mobileNumber = document.getElementById('mobileNumber').value;
+            message += `Payment via Mobile Money to ${mobileNumber} confirmed.`;
+        } else if (paymentOption === 'bank') {
+            const accountNumber = document.getElementById('accountNumber').value;
+            message += `Payment via Bank Transfer from account ${accountNumber} confirmed.`;
+        }
+
+        alert(message);
+    }
+</script>
+
+</body>
+</html>
